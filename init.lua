@@ -127,6 +127,68 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- Folding
+vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
+  pattern = '*.*',
+  callback = function()
+    vim.opt.foldenable = true
+    vim.opt.foldmethod = 'expr'
+    vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+    vim.opt.foldtext = ''
+    vim.opt.foldcolumn = '1'
+  end,
+  group = vim.api.nvim_create_augroup('custom-pretty-folding', { clear = true }),
+})
+vim.keymap.set('n', 'zz', 'za', { desc = 'Toggle folds under this cursor' })
+vim.keymap.set('n', 'zZ', 'zA', { desc = 'Toggle all folds under this cursor' })
+
+-- Persistent Folds
+local save_fold = vim.api.nvim_create_augroup('Persistent Folds', { clear = true })
+vim.api.nvim_create_autocmd('BufWinLeave', {
+  pattern = '*.*',
+  callback = function()
+    vim.cmd.mkview()
+  end,
+  group = save_fold,
+})
+vim.api.nvim_create_autocmd('BufWinEnter', {
+  pattern = '*.*',
+  callback = function()
+    vim.cmd.loadview { mods = { emsg_silent = true } }
+  end,
+  group = save_fold,
+})
+-- Persistent Cursor
+vim.api.nvim_create_autocmd('BufReadPost', {
+  callback = function()
+    local mark = vim.api.nvim_buf_get_mark(0, '"')
+    local lcount = vim.api.nvim_buf_line_count(0)
+    if mark[1] > 0 and mark[1] <= lcount then
+      pcall(vim.api.nvim_win_set_cursor, 0, mark)
+    end
+  end,
+})
+
+-- Cursor Line on each window
+vim.api.nvim_create_autocmd({ 'InsertLeave', 'WinEnter' }, {
+  callback = function()
+    local ok, cl = pcall(vim.api.nvim_win_get_var, 0, 'auto-cursorline')
+    if ok and cl then
+      vim.wo.cursorline = true
+      vim.api.nvim_win_del_var(0, 'auto-cursorline')
+    end
+  end,
+})
+vim.api.nvim_create_autocmd({ 'InsertEnter', 'WinLeave' }, {
+  callback = function()
+    local cl = vim.wo.cursorline
+    if cl then
+      vim.api.nvim_win_set_var(0, 'auto-cursorline', cl)
+      vim.wo.cursorline = false
+    end
+  end,
+})
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -764,7 +826,7 @@ require('lazy').setup({
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
-          ['<CR>'] = cmp.mapping.confirm { select = true },
+          -- ['<CR>'] = cmp.mapping.confirm { select = true },
           ['<Tab>'] = cmp.mapping.select_next_item(),
           ['<S-Tab>'] = cmp.mapping.select_prev_item(),
 
