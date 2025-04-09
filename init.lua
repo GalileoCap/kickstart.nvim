@@ -133,6 +133,8 @@ vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
   callback = function()
     vim.opt.foldenable = true
     vim.opt.foldmethod = 'expr'
+    vim.opt.foldlevel = 5
+    vim.opt.foldlevelstart = 5
     vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
     vim.opt.foldtext = ''
     vim.opt.foldcolumn = '1'
